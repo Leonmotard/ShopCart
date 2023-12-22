@@ -36,7 +36,7 @@ function createData(id, name, brand, description, price, stock) {
 }
 
 const rows = [
-  createData(1, 'pump', 'skf', 'water pump endura 1.8l diesel engine', 150, 8),  
+  createData(1, 'pump', 'skf', 'water pump endura 1.8l diesel engine', 150, 8),
   createData(2, 'belt', 'continental', 'accesories belt honda accord 1993', 45, 15),
   createData(3, 'tensioner pulley', 'dolz', 'accesories belt tensioner pulley mondeo 1998', 65, 4),
   createData(4, 'control arm', 'thompson', 'ford fiesta 1996', 23, 4),
@@ -46,6 +46,7 @@ const rows = [
   createData(8, 'sleeve', 'fadecya', 'renault 9,11,18,19', 280, 8),
   createData(9, 'piston', 'mahle', 'Ford zetec 1.8l 16v', 300, 8),
 ];
+let shopCart = [];
 
 function descendingComparator(a, b, orderBy) {
   if (b[orderBy] < a[orderBy]) {
@@ -230,6 +231,7 @@ export default function ProductsTable() {
   const [page, setPage] = React.useState(0);
   const [dense, setDense] = React.useState(false);
   const [rowsPerPage, setRowsPerPage] = React.useState(5);
+  let totalCost = 0;
 
   const handleRequestSort = (event, property) => {
     const isAsc = orderBy === property && order === 'asc';
@@ -279,6 +281,20 @@ export default function ProductsTable() {
   };
 
   const isSelected = (id) => selected.indexOf(id) !== -1;
+
+  const handleClickAddItem = (event) => {
+    console.log(selected.length);
+    visibleRows.map(
+      (row) => {
+        const isItemSelected = isSelected(row.id);
+        if(isItemSelected){
+          console.log(row.id)
+          totalCost += row.price;
+        }
+      })
+
+      console.log(totalCost);
+  }
 
   // Avoid a layout jump when reaching the last page with empty rows.
   const emptyRows =
@@ -363,9 +379,12 @@ export default function ProductsTable() {
             </TableBody>
           </Table>
         </TableContainer>
-        <IconButton color="primary" aria-label="add to shopping cart">
-        <AddShoppingCartIcon />
-      </IconButton>
+        {/*
+        Button to add articles into the shoppingCart 
+        */}
+        <IconButton color="primary" aria-label="add to shopping cart" onClick={handleClickAddItem}>
+          <AddShoppingCartIcon />
+        </IconButton>
         <TablePagination
           rowsPerPageOptions={[5, 10, 25]}
           component="div"
@@ -375,12 +394,12 @@ export default function ProductsTable() {
           onPageChange={handleChangePage}
           onRowsPerPageChange={handleChangeRowsPerPage}
         />
-      </Paper> 
+      </Paper>
       <FormControlLabel
         control={<Switch checked={dense} onChange={handleChangeDense} />}
         label="Dense padding"
       />
-    
+
     </Box>
   );
 }
