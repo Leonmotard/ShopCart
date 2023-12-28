@@ -15,16 +15,14 @@ import Typography from '@mui/material/Typography';
 import Paper from '@mui/material/Paper';
 import Checkbox from '@mui/material/Checkbox';
 import IconButton from '@mui/material/IconButton';
-import Tooltip from '@mui/material/Tooltip';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Switch from '@mui/material/Switch';
-import DeleteIcon from '@mui/icons-material/Delete';
-import FilterListIcon from '@mui/icons-material/FilterList';
 import { visuallyHidden } from '@mui/utils';
 import AddShoppingCartIcon from '@mui/icons-material/AddShoppingCart';
 import Badge from '@mui/material/Badge';
 import { styled } from '@mui/material/styles';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
+import ShoppingCart from './ShoppingCart';
 
 function createData(id, name, brand, description, price, stock) {
   return {
@@ -53,6 +51,8 @@ const rows = [
 
 //Array containing products selected to be purchased.
 let shopCart = [];
+
+let itemLine = [];
 
 function descendingComparator(a, b, orderBy) {
   if (b[orderBy] < a[orderBy]) {
@@ -186,8 +186,8 @@ EnhancedTableHead.propTypes = {
 
 function EnhancedTableToolbar(props) {
   const { numSelected } = props.numSelected;
-  const {isShopCartVisible} = props.isShopCartVisible
-  const showShopCart = ()=>{
+  const { isShopCartVisible } = props.isShopCartVisible
+  const showShopCart = () => {
     props.setIsShowShopCartVisible(!isShopCartVisible);
   }
   return (
@@ -304,10 +304,23 @@ export default function ProductsTable() {
         const isItemSelected = isSelected(row.id);
         if (isItemSelected) {
           shopCart.push(row);
+          let item = createItem(row.id, row.name, row.brand, row.description);
+          if (itemLine.some(item => item.id === row.id)) {
+            let repeatedItem = itemLine.find(item => item.id === row.id);
+            repeatedItem.partialAmount += row.price;
+            repeatedItem.units += 1;
+            itemLine.splice(itemLine.indexOf(repeatedItem), 1);
+            itemLine.push(repeatedItem);
+          } else {
+            item.partialAmount = row.price;
+            item.units = 1;
+            itemLine.push(item);
+          }
+
         }
-        addItemPrice();
       })
-    //addItemPrice();
+    addItemPrice();
+    console.log(itemLine);
     console.log(shopCart);
     console.log(cost);
   }
@@ -316,11 +329,15 @@ export default function ProductsTable() {
   //asign it to cost variable. 
   const addItemPrice = () => {
     let tempPrice = 0;
-    shopCart.forEach((p) => { tempPrice += p.price })
+    itemLine.forEach((p) => { tempPrice += p.partialAmount })
     setCost(tempPrice);
   }
 
-  
+  //this function returns an object that represent a line containing each product
+  //its data, units selected to be purchased and partial amount to be paid.
+  function createItem(id, name, brand, description, units, partialAmount) {
+    return { id, name, brand, description, units, partialAmount };
+  }
 
   // Avoid a layout jump when reaching the last page with empty rows.
   const emptyRows =
@@ -338,7 +355,7 @@ export default function ProductsTable() {
   return (
     <Box sx={{ width: '100%' }}>
       <Paper sx={{ width: '100%', mb: 2 }}>
-        <EnhancedTableToolbar numSelected={selected.length} isShopCartVisible ={isShopCartVisible} setIsShowShopCartVisible ={setIsShowShopCartVisible} />
+        <EnhancedTableToolbar numSelected={selected.length} isShopCartVisible={isShopCartVisible} setIsShowShopCartVisible={setIsShowShopCartVisible} />
         <TableContainer>
           <Table
             sx={{ minWidth: 750 }}
@@ -425,79 +442,10 @@ export default function ProductsTable() {
         control={<Switch checked={dense} onChange={handleChangeDense} />}
         label="Dense padding"
       />
-
-      
-        {
-          isShopCartVisible &&
-                  <TableContainer>
-                  <Table
-                    sx={{ minWidth: 750 }}
-                    aria-labelledby="tableTitle"
-                    size={dense ? 'small' : 'medium'}
-                  >
-                    <EnhancedTableHead
-                      numSelected={shopCart.length}
-                      order={order}
-                      orderBy={orderBy}
-                      onSelectAllClick={handleSelectAllClick}
-                      onRequestSort={handleRequestSort}
-                      rowCount={shopCart.length}
-                    />
-                    <TableBody>
-                      {shopCart.map((product, index) => {
-                        const isItemSelected = isSelected(product.id);
-                        const labelId = `enhanced-table-checkbox-${index}`;
-
-                        return (
-                          <TableRow
-                            hover
-                            onClick={(event) => handleClick(event, product.id)}
-                            role="checkbox"
-                            aria-checked={isItemSelected}
-                            tabIndex={-1}
-                            key={product.id}
-                            selected={isItemSelected}
-                            sx={{ cursor: 'pointer' }}
-                          >
-                            <TableCell padding="checkbox">
-                              <Checkbox
-                                color="primary"
-                                checked={isItemSelected}
-                                inputProps={{
-                                  'aria-labelledby': labelId,
-                                }}
-                              />
-                            </TableCell>
-                            <TableCell
-                              component="th"
-                              id={labelId}
-                              scope="row"
-                              padding="none"
-                            >
-                              {product.name}
-                            </TableCell>
-                            <TableCell align="right">{product.brand}</TableCell>
-                            <TableCell align="right">{product.description}</TableCell>
-                            <TableCell align="right">{product.price}</TableCell>
-                            <TableCell align="right">{product.stock}</TableCell>
-                          </TableRow>
-                        );
-                      })}
-                      {emptyRows > 0 && (
-                        <TableRow
-                          style={{
-                            height: (dense ? 33 : 53) * emptyRows,
-                          }}
-                        >
-                          <TableCell colSpan={6} />
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-
-        }
-      
+      <ShoppingCart
+        itemLine={itemLine}
+        cost= {cost}
+      />
     </Box>
   );
 }
